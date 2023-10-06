@@ -8,7 +8,6 @@ services:
   server:
     image: unfoldingword/dcs:latest
     container_name: dcs-local
-    command: bash /data/scripts/run_dcs.sh
     environment:
       - USER_UID=1000
       - USER_GID=1000
