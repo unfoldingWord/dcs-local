@@ -1,29 +1,24 @@
 #!/bin/bash
 
-# bash /usr/bin/entrypoint &
+set -e
 
-done_file="/data/DONE"
 catalog_file="/data/catalog.json"
+owners_file="/data/source_owners.txt"
+subjects_file="/data/source_subjects.txt"
+languages_file="/data/source_languages.txt"
+types_file="/data/source_metadata_types.txt"
 
-if test -f "$done_file"; then
-    echo "Source repos already downloaded and imported. Removed the DONE file if you want to run again."
-    exit 1;
-fi
+echo "WARNING!!! THIS WILL RESET __ALL__ SOURCE REPOS THAT MEET THE CRITERIA IN THE source_*.txt files!!!!!"
 
-wget -q --spider https://git.door43.org
+curl -sSf https://git.door43.org &> /dev/null
 
 if [ $? -ne 0 ]; then
     echo "Cannot get online to download from DCS Prod."
     exit 1;
 fi
 
-owners_file="/data/source_owners.txt"
-subjects_file="/data/source_subjects.txt"
-languages_file="/data/source_languages.txt"
-types_file="/data/source_metadata_types.txt"
-
 owners=$(cat "$owners_file" | tr '\n' ',')
-subjects=$(cat "$subjects_file" | tr '\n' ',' | sed -e 's/ /%20/g')
+subjects=$(cat "$subjects_file" | tr '\n' ',')
 langs=$(cat "$languages_file" | tr '\n' ',')
 types=$(cat "$types_file" | tr '\n' ',')
 
@@ -36,23 +31,40 @@ curl --get \
      https://git.door43.org/api/v1/catalog/search
 
 apk add jq
+apk add yq
 
-jq -r '.data[] | .owner + "/" + .name' "$catalog_file" | sort | while read full_name; do
-    echo "Downloading $full_name"
-    su git -c "/app/gitea/gitea dump-repo --git_service gitea --repo_dir '/tmp/$full_name' --clone_addr 'https://git.door43.org/$full_name' --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916"
+jq -c '.data[]' "$catalog_file" | while read entry; do
+    owner=$(echo $entry | jq -r '.owner')
+    repo=$(echo $entry | jq -r '.name')
+    full_name="$owner/$repo"
+    if ! test -d "/tmp/$full_name"; then
+        echo "Downloading $full_name"
+        su git -c "/app/gitea/gitea dump-repo --git_service gitea --repo_dir '/tmp/$full_name' --clone_addr 'https://git.door43.org/$full_name' --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916"
+    fi
+    release_file="/tmp/$full_name/release.yml"
+    if test -f "$release_file"; then
+        echo Deleting assets in releases.yml file
+        yq e 'del(.[].assets)' "$release_file" > "$release_file.tmp"
+        mv "$release_file.tmp" "$release_file"
+    fi
     echo "Creating org if doesn't exist"
     curl -X 'POST' \
-        'http://localhost:3000/api/v1/orgs?token=2c2e5fc8fcc8d9e7b0d2a62563312eae3659e264' \
+        'http://localhost:3000/api/v1/orgs?token=803101a92c733c584e04a5f8eb31ec58e271f8b0' \
         -H 'accept: application/json' \
         -H 'Content-Type: application/json' \
-        -d '{
-            "repo_admin_change_team_access": true,
-            "username": "Door43-Catalog",
-            "visibility": "public",
-        }'
+        -d "{
+            \"repo_admin_change_team_access\": true,
+            \"username\": \"$owner\",
+            \"visibility\": \"public\"
+        }" >& /dev/null
+    echo "Deleting repo if it exists"
+    curl -X 'DELETE' \
+        "http://localhost:3000/api/v1/repos/$full_name?token=803101a92c733c584e04a5f8eb31ec58e271f8b0" >& /dev/null
     echo "Loading $full_name"
-    owner_repo=$(echo "$full_name" | sed -e 's/\// --repo_name /')
-    su git -c "/app/gitea/gitea restore-repo --repo_dir '/tmp/$full_name' --owner_name '$owner_repo'"
+    echo su git -c "/app/gitea/gitea restore-repo --repo_dir '/tmp/$full_name' --owner_name '$owner'  --repo_name '$repo' --units releases"
+    su git -c "/app/gitea/gitea restore-repo --repo_dir '/tmp/$full_name' --owner_name '$owner'  --repo_name '$repo' --units releases"
+    su git -c "/app/gitea/gitea door43metadata --owner '$owner' --repo '$repo'"
+    rm -rf "/tmp/$full_name"
 done
 
-touch "$done_file"
+echo RUN DOOR43 METADATA !!!
