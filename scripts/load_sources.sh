@@ -49,7 +49,7 @@ jq -c '.data[]' "$catalog_file" | while read entry; do
     fi
     echo "Creating org if doesn't exist"
     curl -X 'POST' \
-        'http://localhost:3000/api/v1/orgs?token=803101a92c733c584e04a5f8eb31ec58e271f8b0' \
+        'http://localhost:3000/api/v1/orgs?token=f1200db0ecd5a597f84f624b467df7a1843e5211' \
         -H 'accept: application/json' \
         -H 'Content-Type: application/json' \
         -d "{
@@ -59,12 +59,10 @@ jq -c '.data[]' "$catalog_file" | while read entry; do
         }" >& /dev/null
     echo "Deleting repo if it exists"
     curl -X 'DELETE' \
-        "http://localhost:3000/api/v1/repos/$full_name?token=803101a92c733c584e04a5f8eb31ec58e271f8b0" >& /dev/null
+        "http://localhost:3000/api/v1/repos/$full_name?token=f1200db0ecd5a597f84f624b467df7a1843e5211" >& /dev/null
     echo "Loading $full_name"
     echo su git -c "/app/gitea/gitea restore-repo --repo_dir '/tmp/$full_name' --owner_name '$owner'  --repo_name '$repo' --units releases"
     su git -c "/app/gitea/gitea restore-repo --repo_dir '/tmp/$full_name' --owner_name '$owner'  --repo_name '$repo' --units releases"
     su git -c "/app/gitea/gitea door43metadata --owner '$owner' --repo '$repo'"
     rm -rf "/tmp/$full_name"
 done
-
-echo RUN DOOR43 METADATA !!!
