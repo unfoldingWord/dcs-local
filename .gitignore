@@ -4,3 +4,4 @@ catalog.json
 gitea/indexers
 gitea/queues
 gitea/indexers
+mysql
