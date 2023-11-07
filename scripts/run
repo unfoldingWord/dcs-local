@@ -11,7 +11,7 @@ case $cmd in
     echo "source $@"
     loadSources "$@"
     ;;
-  load_target)
+  load_targets)
     echo "target $@"
     loadTargets "$@"
     ;;

@@ -1,6 +1,6 @@
 en
-hi
-fr
-fa
-fr
-es-419
+#hi
+#fr
+#fa
+#fr
+#es-419

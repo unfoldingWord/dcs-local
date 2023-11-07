@@ -6,7 +6,6 @@ SCRIPTS_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 source "$SCRIPTS_DIR/vars.sh"
 
 exitIfNotOnline() {
-    echo "${API_URL}/version"
     curl -sSf "${API_URL}/version" &> /dev/null
 
     if [ $? -ne 0 ]; then
@@ -17,8 +16,8 @@ exitIfNotOnline() {
 
 ensureRootUser() {
     # Creates a root user if it doesn't exist, and makes sure the password is set to $ROOT_PASSWORD
-    echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin --must-change-password false
-    "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --must-change-password false --admin true || true
+    echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin
+    "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --admin || true
     "$GITEA" admin user change-password --username "$ROOT_USER" --password "$ROOT_PASSWORD"
 }
 
@@ -27,10 +26,10 @@ loadSources() {
 
     echo "WARNING!!! THIS WILL RESET __ALL__ SOURCE REPOS THAT MEET THE CRITERIA IN THE source_*.txt files!!!!!"
 
-    owners=$(tr '\n' ',' < "$OWNERS_FILE")
-    subjects=$(tr '\n' ',' < "$SUBJECTS_FILE")
-    langs=$(tr '\n' ',' < "$LANGUAGES_FILE")
-    types=$(tr '\n' ',' < "$TYPES_FILE")
+    owners=$(tr '\n' ',' < "$OWNERS_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
+    subjects=$(tr '\n' ',' < "$SUBJECTS_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
+    langs=$(tr '\n' ',' < "$LANGUAGES_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
+    types=$(tr '\n' ',' < "$TYPES_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
 
     curl --get \
          --data-urlencode "owner=$owners" \
@@ -91,6 +90,7 @@ importRepoFromRemote() {
     ensureRootUser
     if ! test -d "$TMPDIR/$full_name"; then
         echo "Downloading $full_name..."
+        echo "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916
         "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916
     fi
     release_file="$TMPDIR/$full_name/release.yml"
