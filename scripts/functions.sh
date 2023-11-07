@@ -67,12 +67,9 @@ loadTargets() {
 
     exitIfNotOnline
 
-    curl --get \
+    echo curl --get \
          --output "$TMPDIR/target_catalog.json" \
         "https://git.door43.org/api/v1/catalog/search?owner=$org&stage=latest&metadataType=rc" >& /dev/null
-
-    apk add jq
-    apk add yq
 
     jq -c '.data[]' "$TMPDIR/target_catalog.json" | while read -r entry; do
         owner=$(echo "$entry" | jq -r '.owner')
