@@ -33,7 +33,7 @@ The organizations whose resources you want to load into your local DCS instance
 * source_subjects.txt
 The subjects (resources) you would like to load into your local DCS instance
 
-b) Run the import
+    b) Run the import
 * `docker exec -it dcs-local bash /data/scripts/load_sources.sh` 
 
 This will pull all the sources from the live DCS and load them into your local server.
