@@ -1,5 +1,5 @@
 # DCS local
-A local installation of Door43 Content Service (DCS), empowering teams without Internet connection
+A local installation of Door43 Content Service (DCS), empowering teams without a proper internet connection to run the full DCS experience on the local network.
 
 # Assumptions
 It is assumed that Docker is installed and running. If not, please [go here](https://www.docker.com/get-started/) and follow the instructions.
