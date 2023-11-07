@@ -1,6 +1,5 @@
 git
 ssh
-catalog.json
-gitea/indexers
-gitea/queues
-gitea/indexers
+gitea
+mysql
+!gitea/conf

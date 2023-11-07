@@ -1,3 +1,6 @@
 en
 hi
 fr
+fa
+fr
+es-419
