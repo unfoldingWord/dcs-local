@@ -1,36 +1,31 @@
 #!/bin/bash
 
+SCRIPTS_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "$SCRIPTS_DIR/functions.sh"
+
 cmd=$1
+shift
 
 case $cmd in
-  init)
-    echo -n "init"
-    source ./init_root.sh
-    ;;
   load_sources)
-    echo "source"
-    source ./load_sources.sh
-    loadSources
+    echo "source $@"
+    loadSources "$@"
     ;;
   load_target)
-    echo "target"
-    source ./load_target.sh
+    echo "target $@"
+    loadTargets "$@"
     ;;
-  batch_create_users)
-    echo "create_users"
-    source ./batch_create_users.sh
-    ;;
-  add_users_to_org)
-    echo "add_users_to_org"
-    source ./add_users_to_org.sh
+  add_users)
+    echo "add_users $@"
+    addUsers "$@"
     ;;
   upload_all_target_repos)
-    echo "upload_all_target_repos"
-    source ./upload_all_target_repos.sh
+    echo "upload_all_target_repos $@"
+    uploadAllTargetRepos "$@"
     ;;
   *)
     cat << EOF
-usage: manage [init|load_sources|load_target|add_users|add_group|add_to_group|upload_all_target_repos] <options>
+usage: run [load_sources|load_targets|add_users|upload_all_target_repos] <options>
 
 Log a bug at https://github.com/unfoldingWord/dcs-local/issues or email info@door43.org
 EOF

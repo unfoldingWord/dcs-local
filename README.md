@@ -1,11 +1,42 @@
-# dcs-local
+# DCS local
+A local installation of Door43 Content Service (DCS), empowering teams without a proper internet connection to run the full DCS experience on the local network.
 
-* [Download](https://www.docker.com/get-started/x``) and install Docker
-* Edit `source_*.txt` to set what owners, languages, and subjects (resources) to download
-* `docker compose pull && docker compose up -d`
-* `docker exec -it -u git dcs-local bash /data/scripts/load_sources.sh` ==> NOTE! This can be called whenever you want to update your sources locally, BUT it will clobber and repos that meet the criteria (specified in the `source_*.txt`` files)
-* `docker exec -it -u git dcs-local bash /data/scripts/load_target.sh <org>` ==> must be an existing org that you have already set up with gatewayAdmin to have the proper repos to be translated.
-* `docker exec -it -u git dcs-local bash /data/scripts/add_users.sh <username prefix> <number of users> <password> <org> <num to start from>`
-* `docker exec -it -u git dcs-local bash /data/scripts/upload_all_target_repos.sh https://<username>:<password>@git.door43.org/<org>` ==> Prefix for all git pushes. Must provice your username and password on that server that has push access to all the org's repos.
+# Assumptions
+It is assumed that Docker is installed and running. If not, please [go here](https://www.docker.com/get-started/) and follow the instructions.
+Make sure that Docker Compose [is installed](https://docs.docker.com/compose/install/) as well. This might be a separate step for your environment. 
 
+# Steps to setup a local DCS server
+1) Clone this repo into your local server
+```
+git clone git@github.com:unfoldingWord/dcs-local.git
+```
 
+2) Use Docker Compose to initialize and start the DCS system.
+```
+docker compose pull
+docker compose up -d
+```
+
+3) Verify if your local installation is running by going to http://localhost:3000. You should be greeted by the DCS homepage.
+
+4) Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
+**a)** Prepare the following files. They already contain default information
+    * `source_languages.txt`\
+The languages that you need information for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
+
+    * `source_metadata_types.txt`\
+The types of metadat types you want (rc, sb, ts, tc). Leave empty for all.
+
+    * `source_owners.txt`\
+The organizations whose resources you want to load into your local DCS instance.
+
+    * `source_subjects.txt`\
+The subjects (resources) you would like to load into your local DCS instance
+
+    **b)** Run the import\
+    `docker exec -it -u git dcs-local /data/scripts/run load_sources` 
+
+This will pull all the sources from the live DCS and load them into your local server.
+
+**Note and warning**
+This script  can be called whenever you want to update your sources locally, **but it will overwrite any repository** that meets the criteria as specified in the `source_*.txt` files.
