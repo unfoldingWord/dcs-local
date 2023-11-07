@@ -19,21 +19,21 @@ docker compose up -d
 
 3) Verify if your local installation is running by going to http://localhost:3000. You should be greeted by the DCS homepage.
 
-4) Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.
-a) Prepare the following files. They already contain default information
-* source_languages.txt
+4) Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
+**a)** Prepare the following files. They already contain default information
+* `source_languages.txt`\
 The languages that you need information for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
 
-* source_metadata_types.txt
+* `source_metadata_types.txt`\
 ?
 
-* source_owners.txt
+* `source_owners.txt`\
 The organizations whose resources you want to load into your local DCS instance
 
-* source_subjects.txt
+* `source_subjects.txt`\
 The subjects (resources) you would like to load into your local DCS instance
 
-    b) Run the import
+    **b)** Run the import
 * `docker exec -it dcs-local bash /data/scripts/load_sources.sh` 
 
 This will pull all the sources from the live DCS and load them into your local server.
