@@ -20,7 +20,7 @@ docker compose up -d
 3) Verify if your local installation is running by going to http://localhost:3000. You should be greeted by the DCS homepage.
 
 4) Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
-**a)** Prepare the following files. They already contain default information
+**a)** Prepare the following files. They already contain default information. Any lines starting with `#` will be ignored.
     * `source_languages.txt`\
 The languages that you need information for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
 
@@ -59,7 +59,15 @@ The subjects (resources) you would like to load into your local DCS instance
     * **num** - the number of users to create. Default: 10
     * **password** - the password all users created will have. Default: password
     * **org** - the org of your target repos (imported in step #5) to add your users. If no org, users will not be adde to any org
-    * **start** - the number to start at. Useful if you already created users and want to add 10 more. Default: 1
+    * **start** - the number to start at. Useful if you already created users and want to add 10 more. Default: 1\
+
+    Example:\
+    `docker exec -it -u git dcs-local /data/scripts/run add_users u 20 mypass`\
+    (This will make 20 users with the names u1 to u20 all with the same password of "mypass")
+
+    Note: If you already have users, such as in the above example, but you need to add them to a new org (such as your target org and didn't when you made the users), you can still run add_users and give an org and it will update those existing users:\
+    `docker exec -it -u git dcs-local /data/scripts/run add_users u 10 mypass myorg`\
+    (Now 10 of the 20 users are in the myorg" org)
 
 7) Upload your target repos to production
     

@@ -16,8 +16,10 @@ exitIfNotOnline() {
 
 ensureRootUser() {
     # Creates a root user if it doesn't exist, and makes sure the password is set to $ROOT_PASSWORD
-    echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin
-    "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --admin || true
+    if ! userExists "root"; then
+        echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin
+        "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --admin || true
+    fi
     "$GITEA" admin user change-password --username "$ROOT_USER" --password "$ROOT_PASSWORD"
 }
 
@@ -120,22 +122,22 @@ uploadAllTargetRepos() {
     message="Please provide a DCS URL in the form of \"https://<username>:<password>@git.door43.org/<org>\" where <org> is also on this local copy of DCS. You cannot upload source org repos."
 
     org=${dcs_url##*/}
-    
+
     if [ -z "$org" ]; then
         echo "No org found in the URL."
         echo "$message"
         exit 1
     fi
-    
+
     while read -r line; do
         if [ "$line" == "$org" ]; then
             echo "Sorry, you can't upload the repos of an org that is in the $OWNERS_FILE file."
             exit 1
         fi
     done < "$OWNERS_FILE"
-    
+
     exitIfNotOnline
-    
+
     org_dir="$SCRIPTS_DIR/../git/repositories/$org"
     for d in "$org_dir"/*; do
         echo "$d"
@@ -145,8 +147,20 @@ uploadAllTargetRepos() {
         git push "$dcs_url/$repo" master:master
         echo "Pushed the master branch of $org/${repo%.*} to $dcs_url/$repo"
     done
-    
+
     echo "Finished uploading all repos for target org $org."
+}
+
+userExists() {
+    user="\<${1}\>" #for the regex
+    users=( $(gitea admin user list| tail -n +2 | sed -r 's/^[^ ]+ +([^ ]+).*/\1/g'))
+
+    if [[ ${users[@]} =~ $user ]]
+    then
+        return 0
+    else
+        return 1
+    fi
 }
 
 addUsers() {
@@ -155,18 +169,18 @@ addUsers() {
     password=$3
     org=$4
     start_at=$5
-    
+
     [ -z "$prefx" ] && prefix="user"
     [ -z "$num" ] && num="10"
     [ -z "$password" ] && password="password"
     [ -z "$start_at" ] && start_at="1"
-    
+
     end_at=$(( start_at + num - 1))
-    
+
     echo "Creating $num users with the prefix \"$prefix\" and the password \"$password\", starting at #$start_at."
 
     ensureRootUser
-    
+
     if [ -z "$org" ]; then
         echo "NOTE: Not adding them to any org."
     else
@@ -184,13 +198,18 @@ addUsers() {
         team_id=$(curl -X 'GET' "$LOCALHOST/api/v1/orgs/$org/teams/search?q=Owners" | jq '.data[].id')
         echo "TEAM ID: $team_id"
     fi
-    
+
     for i in $(seq "$start_at" "$end_at"); do
         username="$prefix$i"
-        echo "Creating user #$i: $username"
-        $GITEA admin user create --username "$username" --email "$username@noreply.localhost" --password "$password" --must-change-password false
+        if userExists $username; then
+            echo "User $username already exists"
+        else
+            echo "Creating user #$i: $username"
+            $GITEA admin user create --username "$username" --email "$username@noreply.localhost" --password "$password" --must-change-password false
+        fi
         if [ -n "$org" ]; then
-            curl -X 'PUT' "$LOCALHOST/api/v1/teams/$team_id/members/$username"        
+            curl -X 'PUT' "$LOCALHOST/api/v1/teams/$team_id/members/$username"
+            echo "Added $username to the $org org"
         fi
     done
 }
