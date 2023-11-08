@@ -6,20 +6,23 @@ It is assumed that Docker is installed and running. If not, please [go here](htt
 Make sure that Docker Compose [is installed](https://docs.docker.com/compose/install/) as well. This might be a separate step for your environment. 
 
 # Steps to setup a local DCS server
-1) Clone this repo into your local server
+
+1. Clone this repo into your local server
 ```
 git clone git@github.com:unfoldingWord/dcs-local.git
 ```
 
-2) Use Docker Compose to initialize and start the DCS system.
-```
-docker compose pull
-docker compose up -d
-```
+1. Optional: If you don't want to run this on port 80 of your machine, edit docker-compose.yml and change the "80" in "80:3000" to your desired port.
 
-3) Verify if your local installation is running by going to http://localhost:3000. You should be greeted by the DCS homepage.
+1. Use Docker Compose to initialize and start the DCS system.
+    ```
+    docker compose pull
+    docker compose up -d
+    ```
 
-4) Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
+1. Verify if your local installation is running by going to http://localhost. You should be greeted by the DCS homepage.
+
+1. Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
 **a)** Prepare the following files. They already contain default information. Any lines starting with `#` will be ignored.
     * `source_languages.txt`\
 The languages that you need information for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
@@ -41,7 +44,7 @@ The subjects (resources) you would like to load into your local DCS instance
     **Note and warning**
     This script  can be called whenever you want to update your sources locally, **but it will overwrite any repository** that meets the criteria as specified in the `source_*.txt` files.
 
-5) Load your org which all the work will be done in and users will be added to
+1. Load your org which all the work will be done in and users will be added to
 
     **a)** Run the import for target repos\
     `docker exec -it -u git dcs-local /data/scripts/run load_targets <org>`
@@ -50,7 +53,7 @@ The subjects (resources) you would like to load into your local DCS instance
     This will update your local copy with the target org on production. You should only do this initially or
     when you know you want to overwrite your local copy with production's copy.
 
-6) Create users for your target org
+1. Create users for your target org
 
     **a)** Run the add users for your target org above\
     `docker exec -it -u git dcs-local /data/scripts/run add_users <prefix> <num> <password> <org> <start>`
@@ -69,7 +72,7 @@ The subjects (resources) you would like to load into your local DCS instance
     `docker exec -it -u git dcs-local /data/scripts/run add_users u 10 mypass myorg`\
     (Now 10 of the 20 users are in the myorg" org)
 
-7) Upload your target repos to production
+1. Upload your target repos to production
     
     **a)** Run this to push the master branch of all your target org repos to production\
     `docker exec -it -u git dcs-local /data/scripts/run upload_all_target_repos https://<username>:<password>@git.door43.org`
