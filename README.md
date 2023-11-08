@@ -58,7 +58,7 @@ The subjects (resources) you would like to load into your local DCS instance
     * **prefix** - the prefix of each user which will have a number appended to it. Default: user
     * **num** - the number of users to create. Default: 10
     * **password** - the password all users created will have. Default: password
-    * **org** - the org of your target repos (imported in step #5) to add your users. If no org, users will not be adde to any org
+    * **org** - the org of your target repos (imported in step #5) to add your users. If no org, users will not be adde to any org. If the org doesn't exist, it will be created.
     * **start** - the number to start at. Useful if you already created users and want to add 10 more. Default: 1\
 
     Example:\
