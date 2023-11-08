@@ -1,4 +1,6 @@
 en
+hbo
+el-x-koine
 #hi
 #fr
 #fa
