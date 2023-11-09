@@ -1,6 +1,6 @@
 unfoldingWord
-Door43-Catalog
-MVHS
-fa_gl
-ru_gl
-es-419_gl
+#Door43-Catalog
+#MVHS
+#fa_gl
+#ru_gl
+#es-419_gl

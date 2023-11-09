@@ -6,7 +6,6 @@ SCRIPTS_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 source "$SCRIPTS_DIR/vars.sh"
 
 exitIfNotOnline() {
-    echo "${API_URL}/version"
     curl -sSf "${API_URL}/version" &> /dev/null
 
     if [ $? -ne 0 ]; then
@@ -17,8 +16,10 @@ exitIfNotOnline() {
 
 ensureRootUser() {
     # Creates a root user if it doesn't exist, and makes sure the password is set to $ROOT_PASSWORD
-    echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin --must-change-password false
-    "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --must-change-password false --admin true || true
+    if ! userExists "root"; then
+        echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin
+        "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --admin || true
+    fi
     "$GITEA" admin user change-password --username "$ROOT_USER" --password "$ROOT_PASSWORD"
 }
 
@@ -27,10 +28,10 @@ loadSources() {
 
     echo "WARNING!!! THIS WILL RESET __ALL__ SOURCE REPOS THAT MEET THE CRITERIA IN THE source_*.txt files!!!!!"
 
-    owners=$(tr '\n' ',' < "$OWNERS_FILE")
-    subjects=$(tr '\n' ',' < "$SUBJECTS_FILE")
-    langs=$(tr '\n' ',' < "$LANGUAGES_FILE")
-    types=$(tr '\n' ',' < "$TYPES_FILE")
+    owners=$(tr '\n' ',' < "$OWNERS_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
+    subjects=$(tr '\n' ',' < "$SUBJECTS_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
+    langs=$(tr '\n' ',' < "$LANGUAGES_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
+    types=$(tr '\n' ',' < "$TYPES_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
 
     curl --get \
          --data-urlencode "owner=$owners" \
@@ -68,12 +69,9 @@ loadTargets() {
 
     exitIfNotOnline
 
-    curl --get \
+    echo curl --get \
          --output "$TMPDIR/target_catalog.json" \
         "https://git.door43.org/api/v1/catalog/search?owner=$org&stage=latest&metadataType=rc" >& /dev/null
-
-    apk add jq
-    apk add yq
 
     jq -c '.data[]' "$TMPDIR/target_catalog.json" | while read -r entry; do
         owner=$(echo "$entry" | jq -r '.owner')
@@ -91,6 +89,7 @@ importRepoFromRemote() {
     ensureRootUser
     if ! test -d "$TMPDIR/$full_name"; then
         echo "Downloading $full_name..."
+        echo "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916
         "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916
     fi
     release_file="$TMPDIR/$full_name/release.yml"
@@ -123,22 +122,22 @@ uploadAllTargetRepos() {
     message="Please provide a DCS URL in the form of \"https://<username>:<password>@git.door43.org/<org>\" where <org> is also on this local copy of DCS. You cannot upload source org repos."
 
     org=${dcs_url##*/}
-    
+
     if [ -z "$org" ]; then
         echo "No org found in the URL."
         echo "$message"
         exit 1
     fi
-    
+
     while read -r line; do
         if [ "$line" == "$org" ]; then
             echo "Sorry, you can't upload the repos of an org that is in the $OWNERS_FILE file."
             exit 1
         fi
     done < "$OWNERS_FILE"
-    
+
     exitIfNotOnline
-    
+
     org_dir="$SCRIPTS_DIR/../git/repositories/$org"
     for d in "$org_dir"/*; do
         echo "$d"
@@ -148,8 +147,20 @@ uploadAllTargetRepos() {
         git push "$dcs_url/$repo" master:master
         echo "Pushed the master branch of $org/${repo%.*} to $dcs_url/$repo"
     done
-    
+
     echo "Finished uploading all repos for target org $org."
+}
+
+userExists() {
+    user="\<${1}\>" #for the regex
+    users=( $(gitea admin user list| tail -n +2 | sed -r 's/^[^ ]+ +([^ ]+).*/\1/g'))
+
+    if [[ ${users[@]} =~ $user ]]
+    then
+        return 0
+    else
+        return 1
+    fi
 }
 
 addUsers() {
@@ -158,18 +169,18 @@ addUsers() {
     password=$3
     org=$4
     start_at=$5
-    
+
     [ -z "$prefx" ] && prefix="user"
     [ -z "$num" ] && num="10"
     [ -z "$password" ] && password="password"
     [ -z "$start_at" ] && start_at="1"
-    
+
     end_at=$(( start_at + num - 1))
-    
+
     echo "Creating $num users with the prefix \"$prefix\" and the password \"$password\", starting at #$start_at."
 
     ensureRootUser
-    
+
     if [ -z "$org" ]; then
         echo "NOTE: Not adding them to any org."
     else
@@ -187,13 +198,18 @@ addUsers() {
         team_id=$(curl -X 'GET' "$LOCALHOST/api/v1/orgs/$org/teams/search?q=Owners" | jq '.data[].id')
         echo "TEAM ID: $team_id"
     fi
-    
+
     for i in $(seq "$start_at" "$end_at"); do
         username="$prefix$i"
-        echo "Creating user #$i: $username"
-        $GITEA admin user create --username "$username" --email "$username@noreply.localhost" --password "$password" --must-change-password false
+        if userExists $username; then
+            echo "User $username already exists"
+        else
+            echo "Creating user #$i: $username"
+            $GITEA admin user create --username "$username" --email "$username@noreply.localhost" --password "$password" --must-change-password false
+        fi
         if [ -n "$org" ]; then
-            curl -X 'PUT' "$LOCALHOST/api/v1/teams/$team_id/members/$username"        
+            curl -X 'PUT' "$LOCALHOST/api/v1/teams/$team_id/members/$username"
+            echo "Added $username to the $org org"
         fi
     done
 }

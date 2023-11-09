@@ -1,6 +1,8 @@
 en
-hi
-fr
-fa
-fr
-es-419
+hbo
+el-x-koine
+#hi
+#fr
+#fa
+#fr
+#es-419
