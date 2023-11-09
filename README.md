@@ -37,20 +37,20 @@ Make sure that Docker Compose [is installed](https://docs.docker.com/compose/ins
 5. Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
     **a)** Prepare the following files. They already contain default information. Any lines starting with `#` will be ignored.
     * `source_languages.txt`\
-The languages that you need information for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
+    The languages that you need resources for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
 
     * `source_metadata_types.txt`\
-The types of metadata types you want (rc, sb, ts, tc). Leave empty for all.
+    The types of metadata you want (rc, sb, ts, tc). Leave empty for all.
         * rc = Resource Container
         * sb = Scripture Burrito
         * ts = translationStudio
         * tc = translationCore
 
     * `source_owners.txt`\
-The organizations whose resources you want to load into your local DCS instance.
+    The organizations whose resources you want to load into your local DCS instance.
 
     * `source_subjects.txt`\
-The subjects (resources) you would like to load into your local DCS instance
+    The subjects (resources) you would like to load into your local DCS instance
 
     **b)** Run the import for source repositories
     ```
