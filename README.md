@@ -52,7 +52,12 @@ This setup also assumes that the organization that is being worked in has alread
     ```
 
 4. Verify if your local installation is running by going to http://localhost. You should be greeted by the DCS homepage.\
-_**Note:** If you get a 'Connection reset' warning, please wait a minute and try again._
+_**Note:** If you get a 'Connection reset' warning, please wait a minute and try again._\
+Click on the [Sign in](http://localhost/user/login?redirect_to=%2f) link at the top right of the screen, and log in as admin\
+User: `root`\
+Password: `asecurepassword`\
+_(These credentials have been initially configured in the `vars.sh` file)_
+
 
 5. Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
     **a)** Prepare the following files. They already contain default information. Any lines starting with `#` will be ignored.
