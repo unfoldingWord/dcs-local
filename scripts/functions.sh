@@ -89,8 +89,7 @@ importRepoFromRemote() {
     ensureRootUser
     if ! test -d "$TMPDIR/$full_name"; then
         echo "Downloading $full_name..."
-        echo "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916
-        "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token d54df420a8d39f9cec8394a73c6b44a2afcd0916
+        "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token "$READ_ONLY_PUBLIC_REPO_AUTH_TOKEN"
     fi
     release_file="$TMPDIR/$full_name/release.yml"
     if test -f "$release_file"; then
