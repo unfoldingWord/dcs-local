@@ -1,6 +1,21 @@
 # DCS local
 A local installation of Door43 Content Service (DCS), empowering teams without a proper internet connection to have the full DCS experience on the local network.
 
+# Used terms
+**Production DCS** - the DCS server residing on the internet. This would normally be the server behind the `git.door43.org` URL.
+
+**Source language** - language that functions as a source for translation work
+
+**Source organization** - the organization that functions as the source for all translation work. This can be for example `unfoldingWord`.
+
+**Source repository** - a repository that holds sources used as reference for translation.
+
+**Target language** - language that is being translated into
+
+**Target organization** - the local organization, in which all the translation work will be done.
+
+**Target repository** - a repository that holds translated resources.
+
 # Overview
 To setup a local DCS server, a couple of steps are needed. 
 
@@ -13,13 +28,17 @@ Furthermore, the local DCS server has the following capabilities
 2) Update the target repositories from production DCS
 3) Push all local changes in the local target organizations repositories back to production DCS
 
-# Assumptions
+# Prerequisites
 It is assumed that Docker is installed and running. If not, please [go here](https://www.docker.com/get-started/) and follow the instructions.
 Make sure that Docker Compose [is installed](https://docs.docker.com/compose/install/) as well. This might be a separate step for your environment. 
 
+The availability of [git](https://git-scm.com/download) is also needed. 
+
+This setup also assumes that the organization that is being worked in has already been created on the production DCS server.
+
 # Steps to setup a local DCS server
 
-1. Clone this repo into your local server
+1. Clone this repository into your local server
     ```
     git clone git@github.com:unfoldingWord/dcs-local.git
     ```
@@ -32,7 +51,8 @@ Make sure that Docker Compose [is installed](https://docs.docker.com/compose/ins
     docker compose up -d
     ```
 
-4. Verify if your local installation is running by going to http://localhost. You should be greeted by the DCS homepage.
+4. Verify if your local installation is running by going to http://localhost. You should be greeted by the DCS homepage.\
+_**Note:** If you get a 'Connection reset' warning, please wait a minute and try again._
 
 5. Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
     **a)** Prepare the following files. They already contain default information. Any lines starting with `#` will be ignored.
