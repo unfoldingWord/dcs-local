@@ -7,20 +7,19 @@ cmd=$1
 shift
 
 case $cmd in
+  add_root)
+    ensureRootUser
+    ;;
   load_sources)
-    echo "source $@"
     loadSources "$@"
     ;;
   load_targets)
-    echo "target $@"
     loadTargets "$@"
     ;;
   add_users)
-    echo "add_users $@"
     addUsers "$@"
     ;;
   upload_all_target_repos)
-    echo "upload_all_target_repos $@"
     uploadAllTargetRepos "$@"
     ;;
   *)

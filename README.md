@@ -43,23 +43,28 @@ This setup also assumes that the organization that is being worked in has alread
     git clone git@github.com:unfoldingWord/dcs-local.git
     ```
 
-2. Optional: If you cannot or don't want to run DCS on port 80 of your machine, edit docker-compose.yml and change the "3000" in "3000:3000" to your desired port.
+1. Optional: If you cannot or don't want to run DCS on port 3000 of your machine, edit docker-compose.yml and change the "3000" in "3000:3000" to your desired port.
 
-3. Use Docker Compose to initialize and start the DCS system.
+1. Use Docker Compose to initialize and start the DCS system.
     ```
     docker compose pull
     docker compose up -d
     ```
 
-4. Verify if your local installation is running by going to http://localhost. You should be greeted by the DCS homepage.\
+1. Add the admin user "root" as the first user. It will use the username and password in the vars.sh file (defaults to user "root", password "asecurepassword"). Run the following to create the root user:
+    ```
+    docker exec -it -u git dcs-local /data/scripts/run add_root
+    ```
+
+1. Verify if your local installation is running by going to http://localhost. You should be greeted by the DCS homepage.\
 _**Note:** If you get a 'Connection reset' warning, please wait a minute and try again._\
-Click on the [Sign in](http://localhost/user/login?redirect_to=%2f) link at the top right of the screen, and log in as admin\
+Click on the [Sign in](http://localhost:3000/user/login?redirect_to=%2f) link at the top right of the screen, and log in as admin\
 User: `root`\
 Password: `asecurepassword`\
 _(These credentials have been initially configured in the `vars.sh` file)_
 
 
-5. Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
+1. Pre-load DCS with the information (owners, languages, and subjects (resources)) that you want to be available.\
     **a)** Prepare the following files. They already contain default information. Any lines starting with `#` will be ignored.
     * `source_languages.txt`\
     The languages that you need resources for, indicated by their [ISO 639-1 2-letter code](https://en.wikipedia.org/wiki/ISO_639-1)
@@ -89,7 +94,7 @@ _(These credentials have been initially configured in the `vars.sh` file)_
 
     You can verify if the import was succesful by going to http://localhost/catalog. 
 
-6. Load the organization and its repositories in which all the work will be done.
+1. Load the organization and its repositories in which all the work will be done.
 
     Run the import for target repositories
     ```
@@ -99,7 +104,7 @@ _(These credentials have been initially configured in the `vars.sh` file)_
     **Warning**\
     This will update your local DCS with the indicated organization and its repositories from DCS production. You should only do this initially, or when you know you really want to overwrite your local copy with the copy from production.
 
-7. Create local users for your target organization
+1. Create local users for your target organization
     ```
     docker exec -it -u git dcs-local /data/scripts/run add_users <prefix> <num> <password> <org> <start>
     ```
