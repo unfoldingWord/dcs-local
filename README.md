@@ -43,7 +43,7 @@ This setup also assumes that the organization that is being worked in has alread
     git clone git@github.com:unfoldingWord/dcs-local.git
     ```
 
-2. Optional: If you cannot or don't want to run DCS on port 80 of your machine, edit docker-compose.yml and change the "80" in "80:3000" to your desired port.
+2. Optional: If you cannot or don't want to run DCS on port 80 of your machine, edit docker-compose.yml and change the "3000" in "3000:3000" to your desired port.
 
 3. Use Docker Compose to initialize and start the DCS system.
     ```
