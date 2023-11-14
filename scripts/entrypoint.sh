@@ -1,0 +1,2 @@
+openssl req -x509 -nodes -days 1095 -newkey rsa:2048 -keyout /etc/ssl/private/localdcs.key -out /etc/ssl/certs/localdcs.crt -subj "/C=US/ST=Orlando/L=Orlando/O=unfoldingWord/OU=Infrastructure/CN=dcs.local"
+nginx -g 'daemon off;'

@@ -1,13 +1,13 @@
 version: "3"
 
 networks:
-  gitea:
-    external: false
+  backend:
+  frontend:
 
 services:
   server:
     image: unfoldingword/dcs:latest
-    container_name: dcs-local
+    container_name: dcs-local-gitea
 
     environment:
       - USER_UID=1000
@@ -19,7 +19,7 @@ services:
       - GITEA__database__PASSWD=gitea
     restart: always
     networks:
-      - gitea
+      - backend
     volumes:
       - .:/data
       - /etc/timezone:/etc/timezone:ro
@@ -32,6 +32,7 @@ services:
 
   db:
     image: mysql:8
+    container_name: dcs-local-mysql
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=gitea
@@ -39,6 +40,23 @@ services:
       - MYSQL_PASSWORD=gitea
       - MYSQL_DATABASE=gitea
     networks:
-      - gitea
+      - backend
     volumes:
       - ./mysql:/var/lib/mysql
+
+  proxy:
+    container_name: dcs-local-proxy
+    image: nginx
+    restart: always
+    networks: 
+      - backend
+      - frontend
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./scripts:/opt/scripts
+    depends_on:
+      - server
+    entrypoint: /docker-entrypoint.sh /opt/scripts/entrypoint.sh
