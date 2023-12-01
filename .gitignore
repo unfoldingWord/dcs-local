@@ -1,5 +1,6 @@
 git
 ssh
-gitea
 mysql
+gitea
 !gitea/conf
+settings.sh

@@ -7,7 +7,7 @@ cmd=$1
 shift
 
 case $cmd in
-  add_root)
+  create_admin_user)
     ensureRootUser
     ;;
   load_sources)
@@ -19,12 +19,15 @@ case $cmd in
   add_users)
     addUsers "$@"
     ;;
-  upload_all_target_repos)
+  update_targets)
+    updateAllTargetRepos
+    ;;
+  upload_targets)
     uploadAllTargetRepos "$@"
     ;;
   *)
     cat << EOF
-usage: run [load_sources|load_targets|add_users|upload_all_target_repos] <options>
+usage: run [create_admin_user|load_sources|load_targets|add_users|update_targets|upload_targets] <options>
 
 Log a bug at https://github.com/unfoldingWord/dcs-local/issues or email info@door43.org
 EOF

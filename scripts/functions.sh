@@ -9,42 +9,51 @@ exitIfNotOnline() {
     curl -sSf "${API_URL}/version" &> /dev/null
 
     if [ $? -ne 0 ]; then
-        echo "Cannot get online to download from $DCS_HOST"
+        echo "Cannot get online to download from $REMOTE_DCS_URL"
         exit 1;
     fi
 }
 
 ensureRootUser() {
-    # Creates a root user if it doesn't exist, and makes sure the password is set to $ROOT_PASSWORD
-    if ! userExists "root"; then
-        echo "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost" --admin
-        "$GITEA" admin user create --username "$ROOT_USER" --password "$ROOT_PASSWORD" --email "$ROOT_USER@no-reply.localhost"  --admin || true
+    # Creates a local admin user if it doesn't exist, and makes sure the password is set to $LOCAL_ADMIN_PASSWORD
+    if ! userExists "$LOCAL_ADMIN_USER"; then
+        "$GITEA" admin user create --username "$LOCAL_ADMIN_USER" --password "$LOCAL_ADMIN_PASSWORD" --email "$LOCAL_ADMIN_USER@no-reply.localhost"  --admin || true
     fi
-    "$GITEA" admin user change-password --username "$ROOT_USER" --password "$ROOT_PASSWORD"
+    "$GITEA" admin user change-password --username "$LOCAL_ADMIN_USER" --password "$LOCAL_ADMIN_PASSWORD"
 }
 
 loadSources() {
     exitIfNotOnline
 
     echo "WARNING!!! THIS WILL RESET __ALL__ SOURCE REPOS THAT MEET THE CRITERIA IN THE source_*.txt files!!!!!"
+    echo -n "Do you wish to continue? (y/N): "
+    read confirm
+    if [ -z "$confirm" ] || ([ "$confirm" != "y" ] && [ "$confim" != "Y" ]); then
+        echo "Exiting."
+        exit 1
+    fi
 
     owners=$(tr '\n' ',' < "$OWNERS_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
     subjects=$(tr '\n' ',' < "$SUBJECTS_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
     langs=$(tr '\n' ',' < "$LANGUAGES_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
     types=$(tr '\n' ',' < "$TYPES_FILE"| sed -r 's/#[^,]+,*//g' | sed 's/,$//')
 
+    echo "OWNERS: $owners"
+    echo "LANGS: $langs"
+    echo "SUBJECTS: [see source_subjects.txt]"
+    echo "METADATA TYPES: $types"
+
     curl --get \
          --data-urlencode "owner=$owners" \
         --data-urlencode "lang=$langs" \
         --data-urlencode "subject=$subjects" \
         --data-urlencode "metadataType=$types" \
-        --output "$TMPDIR/source_catalog.json" \
-        https://git.door43.org/api/v1/catalog/search >& /dev/null
+        --output "$SOURCE_CATALOG_FILE" \
+        "${API_URL}/catalog/search" >& /dev/null
 
-    jq -c '.data[]' "$TMPDIR/source_catalog.json" | while read -r entry; do
+    jq -c '.data[]' "$SOURCE_CATALOG_FILE" | while read -r entry; do
         owner=$(echo "$entry" | jq -r '.owner')
         repo=$(echo "$entry" | jq -r '.name')
-        echo "OWNER $owner REPO $repo"
         importRepoFromRemote "$owner" "$repo"
     done
 
@@ -52,30 +61,35 @@ loadSources() {
 }
 
 loadTargets() {
-    echo "WARNING!!! THIS WILL RESET __ALL__ TARGET REPOS OF THE GIVEN ORG!!!!!"
-
-    org=$1
-
-    if [ -z "$org" ]; then
-        echo "No org proviced. Please provide an org that is NOT in the source_owners.txt file"
-    fi
-
-    while read -r line; do
-        if [ "$line" == "$org" ]; then
-            echo "Sorry, you can't import an org that is in the source_owners.txt file."
-            exit 1
-        fi
-    done < "$OWNERS_FILE"
-
     exitIfNotOnline
 
-    curl --get \
-         --output "$TMPDIR/target_catalog.json" \
-        "https://git.door43.org/api/v1/catalog/search?owner=$org&stage=latest&metadataType=rc" >& /dev/null
+    echo "WARNING!!! THIS WILL RESET __ALL__ TARGET REPOS OF THE GIVEN ORG!!!!!"
+    echo -n "Enter the target org that exists on the remote DCS: "
+    read org
+    if [ -z "$org" ] || [ "$org" == "" ]; then
+        echo "Nothing loaded. Exiting."
+        exit 1
+    fi
 
-    jq -c '.data[]' "$TMPDIR/target_catalog.json" | while read -r entry; do
+    echo -n "Enter the target language (Blank for all): "
+    read lang
+
+    lang_urlencode_str=""
+    if [ "$lang" != "" ]; then
+        lang_urlencode_str="lang=$lang"
+    fi
+
+    curl --get \
+         --data-urlencode "owner=$org" \
+        --data-urlencode "$lang_urlencode_str" \
+        --data-urlencode "stage=latest" \
+        --output "$TARGET_CATALOG_FILE" \
+        "${API_URL}/catalog/search" >& /dev/null
+
+    jq -c '.data[]' "$TARGET_CATALOG_FILE" | while read -r entry; do
         owner=$(echo "$entry" | jq -r '.owner')
         repo=$(echo "$entry" | jq -r '.name')
+        release=$(echo "$entry" | jq -r '.release')
         importRepoFromRemote "$owner" "$repo"
     done
 
@@ -89,7 +103,9 @@ importRepoFromRemote() {
     ensureRootUser
     if ! test -d "$TMPDIR/$full_name"; then
         echo "Downloading $full_name..."
-        "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "https://git.door43.org/$full_name" --units releases --auth_token "$READ_ONLY_PUBLIC_REPO_AUTH_TOKEN"
+        curl -f "$API_URL/repos/$ful_name/releases" && \
+            "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "$REMOTE_DCS_URL/$full_name" --units releases || \
+            "${GITEA}" dump-repo --git_service gitea --repo_dir "$TMPDIR/$full_name" --clone_addr "$REMOTE_DCS_URL/$full_name"
     fi
     release_file="$TMPDIR/$full_name/release.yml"
     if test -f "$release_file"; then
@@ -116,24 +132,13 @@ importRepoFromRemote() {
     rm -rf "$TMPDIR/$full_name"
 }
 
-uploadAllTargetRepos() {
-    dcs_url=$1
-    message="Please provide a DCS URL in the form of \"https://<username>:<password>@git.door43.org/<org>\" where <org> is also on this local copy of DCS. You cannot upload source org repos."
-
-    org=${dcs_url##*/}
-
-    if [ -z "$org" ]; then
-        echo "No org found in the URL."
-        echo "$message"
+updateAllTargetRepos() {
+    echo -n "Enter the org to update: "
+    read org
+    if [ "$org" == "" ]; then
+        echo "No org given. Exiting."
         exit 1
     fi
-
-    while read -r line; do
-        if [ "$line" == "$org" ]; then
-            echo "Sorry, you can't upload the repos of an org that is in the $OWNERS_FILE file."
-            exit 1
-        fi
-    done < "$OWNERS_FILE"
 
     exitIfNotOnline
 
@@ -143,8 +148,47 @@ uploadAllTargetRepos() {
         cd "$d" || exit
         repo=${d##*/}
         git config --global --add safe.directory "$d"
-        git push "$dcs_url/$repo" master:master
-        echo "Pushed the master branch of $org/${repo%.*} to $dcs_url/$repo"
+        git pull "$REMOTE_HOST_URL/$repo" master:master
+        echo "Updated the master branch of $org/${repo%.*} from $REMOTE_DCS_URL/$repo"
+    done
+
+    echo "Finished updating all repos for target org $org."
+}
+
+uploadAllTargetRepos() {
+    exitIfNotOnline
+
+    # echo -n "Enter your remote username: "
+    # read user
+    # if [ "$user" == "" ]; then
+    #     echo "No username given. Exiting."
+    #     exit 1
+    # fi
+
+    # echo -n "Enter your remote password: "
+    # read pass
+    # if [ "$pass" == "" ]; then
+    #     echo "No password given. Exiting."
+    #     exit 1
+    # fi
+
+    echo -n "Enter the org to upload: "
+    read org
+    if [ "$org" == "" ]; then
+        echo "No org given. Exiting."
+        exit 1
+    fi
+
+    # dcs_url=${REMOTE_DCS_URL/\/\////$user:$pass@}
+
+    org_dir="$SCRIPTS_DIR/../git/repositories/$org"
+    for d in "$org_dir"/*; do
+        echo "$d"
+        cd "$d" || exit
+        repo=${d##*/}
+        git config --global --add safe.directory "$d"
+        git push "$REMOTE_DCS_URL/$repo" master:master
+        echo "Pushed the master branch of $org/${repo%.*} to $REMOTE_DCS_URL/$repo"
     done
 
     echo "Finished uploading all repos for target org $org."
